@@ -45,7 +45,12 @@ exports.cql = {
         WHERE r.dataInicio >= pDataInicio 
         AND toUpper(r.cliente) CONTAINS toUpper(pNomeCliente) 
         AND toUpper(r.projeto) CONTAINS toUpper(pNomeProjetos)
-        RETURN collect(r{.*})
+        OPTIONAL MATCH (r)<-[:ATIVIDADE_DA]-(a:Atividades)
+        WITH r, collect(a{.*}) as atividades
+        OPTIONAL MATCH (r)<-[:EFETIVO_DA]-(e:Efetivos)
+        WITH r, atividades, collect(e{.*}) as efetivos
+        ORDER BY r.id_rdo DESC
+        RETURN collect({rdo: r{.*}, atividade: atividades, efetivos: efetivos})
     `,
 
     NovoRdo: `
@@ -209,16 +214,29 @@ exports.cql = {
 
     DominioClientes: `
         MATCH (c:Cliente)
+        WITH c
+        ORDER BY c.nome
         RETURN collect(c.nome)
     `,
 
     DominioProjetosClientes: `
         MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
+        WITH p, c
+        ORDER BY p.nome
         RETURN collect({cliente: c{.*}, projeto: p{.*}})
     `,
 
     DominioColaboradores: `
         MATCH (c:Colaborador)
+        WITH c
+        ORDER BY c.nome
         RETURN collect({nome: c.nome, reg: toFloat(c.reg), funcao: c.funcao})
+    `,
+
+    RdoDoDia: `
+        WITH $dataHora AS pDataHora
+        MATCH (r:RDO)
+        WHERE r.id_rdo >= pDataHora
+        RETURN toFloat(count(r))
     `
 }

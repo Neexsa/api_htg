@@ -211,6 +211,20 @@ exports.novoRdo = async (req, res, next) => {
     }
 }
 
+exports.rdoDoDia = async (req, res, next) => {
+    try {
+        let body = req.body
+        let params = {
+            dataHora: body.dataHora
+        }
+        let cql = query.cql.RdoDoDia
+        let resultRdo = await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({resultRdo})
+    } catch (err) {
+        res.status(500).send({ mensagem: 'Não foi possivel buscar os dados' })
+    }
+}
+
 exports.dominioClientes = async (req, res, next) => {
     try{
         let cql = query.cql.DominioClientes;

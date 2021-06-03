@@ -16,6 +16,7 @@ router.post('/alterar-status-projeto', controller.alterarStatusProjeto)
 
 router.post('/rdos', controller.rdos)
 router.post('/novo-rdo', controller.novoRdo)
+router.post('/rdo-do-dia', controller.rdoDoDia)
 
 router.get('/dominio/clientes', controller.dominioClientes)
 router.get('/dominio/projetosClientes', controller.dominioProjetosClientes)
