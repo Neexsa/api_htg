@@ -250,7 +250,7 @@ exports.novoRdo = async (req, res, next) => {
                 console.log(html)
 
                 pdf.create(html,{
-                    format: "A3",
+                    format: "A4",
                     border: "5mm",
                 }).toStream(function(err, stream){
                     if (err) return res.status(500).send(err)
@@ -367,7 +367,7 @@ exports.editarRdo = async (req, res, next) => {
                 console.log(html)
 
                 pdf.create(html,{
-                    format: "A3",
+                    format: "A4",
                     border: "5mm",
                 }).toStream(function(err, stream){
                     if (err) return res.status(500).send(err)
