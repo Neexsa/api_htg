@@ -9,6 +9,28 @@ exports.cql = {
 
     NovoClientes:`
         MERGE (c:Cliente {nome: $novoNomeCliente})
+        SET c.ativo = true
+    `,
+
+    VerificarProjetos: `
+        WITH $nomeCliente as pNomeCliente
+        MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
+        WHERE c.nome = pNomeCliente AND p.ativo = true AND p.pausado = false
+        RETURN collect(p.nome)
+    `,
+
+    DeleteCliente: `
+        WITH $nomeCliente as pNomeCliente
+        MATCH (c:Cliente)
+        WHERE c.nome = pNomeCliente
+        DETACH DELETE c
+    `,
+
+    AlterarStatusCliente: `
+        WITH $nomeCliente as pNomeCliente, $status as pStatus
+        MATCH (c:Cliente)
+        WHERE c.nome = pNomeCliente
+        SET c.ativo = pStatus
     `,
 
     NovoProjeto: `
@@ -28,6 +50,12 @@ exports.cql = {
         MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
         WHERE c.nome = pNomeCliente AND p.dataInicio >= pDataInicio AND p.nome CONTAINS pTextoPesquisa
         RETURN collect(p{.*, dataInicioInter: toFloat(p.dataInicio)}) as projetos
+    `,
+
+    VerificarCliente: `
+        MATCH (c:Cliente)   
+        WHERE c.nome = $nomeCliente AND c.ativo = false
+        RETURN collect(c.nome)
     `,
 
     PausarProjeto: `
@@ -119,6 +147,65 @@ exports.cql = {
         CREATE (p)<-[:RDO_DA]-(r)
     `,
 
+    EditarRdo: `
+        WITH $nomeCliente AS pNomeCliente,
+            $nomeProjetos AS pNomeProjetos,
+            $dateInicio AS pDateInicio,
+            $idRDO AS pIdRDO,
+            $areaAtuacao AS pAreaAtuacao,
+            $cartaChamada AS pCartaChamada,
+            $nomeFiscal AS pNomeFiscal,
+            $nomeEncarregado AS pNomeEncarregado,
+            $condicaoManha AS pCondicaoManha,
+            $condicaoTarde AS pCondicaoTarde,
+            $condicaoNoite AS pCondicaoNoite,
+            $prazoAtividade AS pPrazoAtividade,
+            $diasDecorridos AS pDiasDecorridos,
+            $prorrogacao AS pProrrogacao,
+            $diasRestantes AS pDiasRestantes,
+            $diasDeAtrazos AS pDiasDeAtrazos,
+            $opcoesDDS AS pOpcoesDDS,
+            $opcoesPrejuizo AS pOpcoesPrejuizo,
+            $opcoesViolacao AS pOpcoesViolacao,
+            $opcoesOciosidade AS pOpcoesOciosidade,
+            $servico AS pServico,
+            $inicioReal AS pInicioReal,
+            $terminoReal AS pTerminoReal,
+            $inicioPrevisto AS pInicioPrevisto,
+            $terminoPrevisto AS pTerminoPrevisto,
+            $comentarios AS pComentarios
+
+        MATCH (r:RDO {
+            cliente: pNomeCliente,
+            projeto: pNomeProjetos,
+            dataInicio: pDateInicio,
+            id_rdo: pIdRDO
+        })
+
+        SET r.areaAtuacao = pAreaAtuacao,
+        r.cartaChamada = pCartaChamada,
+        r.nomeFiscal = pNomeFiscal,
+        r.nomeEncarregado = pNomeEncarregado,
+        r.condicaoManha = pCondicaoManha,
+        r.condicaoTarde = pCondicaoTarde,
+        r.condicaoNoite = pCondicaoNoite,
+        r.prazoAtividade = pPrazoAtividade,
+        r.diasDecorridos = pDiasDecorridos,
+        r.prorrogacao = pProrrogacao,
+        r.diasRestantes = pDiasRestantes,
+        r.diasDeAtrazos = pDiasDeAtrazos,
+        r.opcoesDDS = pOpcoesDDS,
+        r.opcoesPrejuizo = pOpcoesPrejuizo,
+        r.opcoesViolacao = pOpcoesViolacao,
+        r.opcoesOciosidade = pOpcoesOciosidade,
+        r.servico = pServico,
+        r.inicioReal = pInicioReal,
+        r.terminoReal = pTerminoReal,
+        r.inicioPrevisto = pInicioPrevisto,
+        r.terminoPrevisto = pTerminoPrevisto,
+        r.comentarios = pComentarios
+    `,
+
     NovoRdoEfetivos: `
         WITH $nomeProjetos AS pNomeProjetos,
         $idRDO AS pIdRDO,
@@ -176,6 +263,13 @@ exports.cql = {
         CREATE (r)<-[:EFETIVO_DA]-(e)
     `,
 
+    DeleteRdoEfetivos: `
+        WITH $idRDO AS pIdRDO
+        MATCH (r:RDO)<-[:EFETIVO_DA]-(e:Efetivos)
+        WHERE r.id_rdo = pIdRDO
+        DETACH DELETE e
+    `,
+
     NovoRdoAtividade: `
         WITH $nomeProjetos AS pNomeProjetos,
         $idRDO AS pIdRDO,
@@ -212,8 +306,23 @@ exports.cql = {
         CREATE (r)<-[:ATIVIDADE_DA]-(a)
     `,
 
+    DeleteRdoAtividade: `
+        WITH $idRDO AS pIdRDO
+        MATCH (r:RDO)<-[:ATIVIDADE_DA]-(a:Atividades)
+        WHERE r.id_rdo = pIdRDO 
+        DETACH DELETE a
+    `,
+
     DominioClientes: `
         MATCH (c:Cliente)
+        WITH c
+        ORDER BY c.nome
+        RETURN collect(c.nome)
+    `,
+
+    DominioClientesAtivos:`
+        MATCH (c:Cliente)
+        WHERE c.ativo = true
         WITH c
         ORDER BY c.nome
         RETURN collect(c.nome)
