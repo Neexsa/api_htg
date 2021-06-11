@@ -21,10 +21,20 @@ router.post('/novo-rdo', controller.novoRdo)
 router.post('/editar-rdo', controller.editarRdo)
 router.post('/rdo-do-dia', controller.rdoDoDia)
 
+router.post('/colaboradores', controller.colaboradores)
+router.post('/novo-colaborador', controller.novoColaboradores)
+router.post('/editar-colaborador', controller.editarColaboradores)
+router.post('/alterar-status-colaborador', controller.alterarStatusColaboradores)
+
+router.post('/funcao', controller.funcao)
+router.post('/nova-funcao', controller.novaFuncao)
+router.post('/delete-funcao', controller.deleteFuncao)
+
 router.get('/dominio/clientes', controller.dominioClientes)
 router.get('/dominio/clientes-ativos', controller.dominioClientesAtivos)
-router.get('/dominio/projetosClientes', controller.dominioProjetosClientes)
-router.get('/dominio/colaboradores', controller.colaboradores)
+router.get('/dominio/projetos-clientes', controller.dominioProjetosClientes)
+router.get('/dominio/colaboradores', controller.dominioColaboradores)
+router.get('/dominio/funcao', controller.dominioFuncao)
 
 router.post('/aws-pdf', controller.awsPdf)
 module.exports = router;

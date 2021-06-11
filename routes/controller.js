@@ -250,8 +250,7 @@ exports.novoRdo = async (req, res, next) => {
                 console.log(html)
 
                 pdf.create(html,{
-                    format: "A4",
-                    border: "5mm",
+                    format: "A4"
                 }).toStream(function(err, stream){
                     if (err) return res.status(500).send(err)
                     // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
@@ -367,8 +366,7 @@ exports.editarRdo = async (req, res, next) => {
                 console.log(html)
 
                 pdf.create(html,{
-                    format: "A4",
-                    border: "5mm",
+                    format: "A4"
                 }).toStream(function(err, stream){
                     if (err) return res.status(500).send(err)
                     // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
@@ -440,13 +438,96 @@ exports.dominioProjetosClientes = async (req, res, next) => {
     }
 }
 
-exports.colaboradores = async (req, res, next) => {
+exports.dominioColaboradores = async (req, res, next) => {
     try{
         let cql = query.cql.DominioColaboradores;
         let result = await db.neo4j.executeCypherAsync(cql)
         res.status(200).send(result)
     }catch (e){
         res.status(500).send({resposta: e, message: 'Não foi possivel buscar os Colaboradores'})
+    }
+}
+exports.dominioFuncao = async (req, res, next) => {
+    try{
+        let cql = query.cql.DominioFuncao;
+        let result = await db.neo4j.executeCypherAsync(cql)
+        res.status(200).send(result)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar as Funções'})
+    }
+}
+
+exports.novoColaboradores = async (req, res, next) => {
+    try {
+        let body = req.body
+        let params = {
+            colaborador: {
+                reg: body.reg,
+                dataCriacao: body.dataCriacao,
+                nome: body.nomeColaborador,
+                email: body.emailColaborador,
+                telefone: body.telefoneColaborador,
+                cpf: body.cpfColaborador,
+                funcao: body.funcaoColaborador,
+                status: 'ativo'
+            }
+        }
+        let cql = query.cql.VerificarColaborador
+        let qtd = await db.neo4j.executeCypherAsync(cql, params)
+        if (qtd > 0) {
+            res.status(200).send({qtd: qtd, mensagem: 'Nome Existente' })
+        } else {
+            let cql = query.cql.NovoColaborador
+            await db.neo4j.executeCypherAsync(cql, params)
+            res.status(200).send({ mensagem: 'Salvo com sucesso' })
+        } 
+    } catch (err) {
+        res.status(500).send({ mensagem: 'Não foi possivel salvar' })
+    }
+}
+
+exports.editarColaboradores = async (req, res, next) => {
+    try {
+        let body = req.body
+        let params = {
+            colaborador: {
+                reg: body.reg,
+                dataCriacao: body.dataCriacao,
+                nome: body.nomeColaborador,
+                email: body.emailColaborador,
+                telefone: body.telefoneColaborador,
+                cpf: body.cpfColaborador,
+                funcao: body.funcaoColaborador
+            }
+        }
+        let cql = query.cql.EditarColaborador
+        await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({ mensagem: 'Salvo com sucesso' })
+    } catch (err) {
+        res.status(500).send({ mensagem: 'Não foi possivel salvar' })
+    }
+}
+
+exports.alterarStatusColaboradores = async (req, res, next) => {
+    try {
+        let body = req.body
+        let params = {
+            colaborador: {
+                reg: body.reg,
+                dataCriacao: body.dataCriacao,
+                nome: body.nomeColaborador,
+                email: body.emailColaborador,
+                telefone: body.telefoneColaborador,
+                cpf: body.cpfColaborador,
+                funcao: body.funcaoColaborador,
+                status: body.status
+            }
+        }
+        let cql = query.cql.AlterarStatusColaborador
+        await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({ mensagem: 'Status alterado com sucesso' })
+    } catch (err) {
+        res.status(500).send({ mensagem: 'Não foi possivel alterar o status' })
     }
 }
 
@@ -530,55 +611,69 @@ exports.awsPdf = async (req, res, next) => {
        })
 
     res.send(url)
-
-    /* const s3Client = new aws.S3({
-        accessKeyId: 'AKIA3W7SB22BQZO67YLE',
-        secretAccessKey: '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',
-        region: 'sa-east-1'
-    });
-
-    const params = {
-            Bucket: 'neexsa-htg-pdfs', 
-            Key: '', // pass key
-    };
-
     
-    params.Key = '1622198871951.pdf'; */
+}
 
-    /* res.setHeader('Content-Disposition', 'attachment');
-
-	s3Client.getObject(params)
-		.createReadStream()
-			.on('error', function(err){
-				res.status(500).json({error:"Error -> " + err});
-		}).pipe(res); */
-    
-
-    /* var fileName = '1622198871951.pdf'
-    aws.config.update({
-        accessKeyId: 'AKIA3W7SB22BQZO67YLE',
-        secretAccessKey: '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',
-        region: 'sa-east-1'
-    })
-
-    const s3 = new aws.S3();
-
-    const params  = {
-        Bucket: 'neexsa-htg-pdfs',
-        Key: fileName
-    }
-            
-    s3.getObject(params, function(err, data) {
-        if (err) {
-            throw err
+exports.colaboradores = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            textoPesquisar: body.textoPesquisar ? body.textoPesquisar : '',
+            status: body.status
         }
-        fs.writeFileSync(`./pdf/${fileName}`, data.Body)
-        console.log('file downloaded successfully')
-    }) */
+        let cql = query.cql.Colaboradores;
+        let result = await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send(result)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar os Colaboradores'})
+    }
+}
 
-    /* res.setHeader("Access-Control-Allow-Origin", "*");
+exports.funcao = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            textoPesquisar: body.textoPesquisar ? body.textoPesquisar : ''
+        }
+        let cql = query.cql.Funcao;
+        let result = await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send(result)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar as Funções'})
+    }
+}
 
-    var file = __dirname + '../pdf/1622198871951.pdf';
-    res.download(file); // Set disposition and send it. */
-    
+exports.novaFuncao = async (req, res, next) => {
+    try{
+        let body = req.body
+        let cql = ''
+        let params = {
+            novoNomeFuncao: body.novoNomeFuncao ? body.novoNomeFuncao : ''
+        }
+        cql = query.cql.VerificarFuncao;
+        let qtd = await db.neo4j.executeCypherAsync(cql, params)
+        if (qtd > 0) {
+            res.status(200).send({qtd: qtd, mensagem: 'Função já existente'})
+        } else {
+            cql = query.cql.NovaFuncao;
+            await db.neo4j.executeCypherAsync(cql, params)
+            res.status(200).send({mensagem: 'Salvo com sucesso'})
+        }
+    }catch (e){
+        res.status(500).send({resposta: e, mensagem: 'Não foi possivel salvar'})
+    }
+}
+
+exports.deleteFuncao = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            nomeFuncao: body.nomeFuncao.nome ? body.nomeFuncao.nome : ''
+        }
+        let cql = query.cql.DeletarFuncao;
+        await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({mensagem: 'Deletado com sucesso'})
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel deletar a Função'})
+    }
 }

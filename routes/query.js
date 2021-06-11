@@ -3,8 +3,14 @@ exports.cql = {
         MATCH (c:Cliente)
         WHERE toUpper(c.nome) CONTAINS toUpper($nomePesquisa)
         OPTIONAL MATCH (c)<-[:PROJETO_DA]-(p:Projeto)
-        WITH count(p) as quantidade, c
-        RETURN collect({cliente: c{.*}, quantidadeProjetos: toFloat(quantidade)})
+        WITH count(p) as qtd, c
+        OPTIONAL MATCH (c)<-[:PROJETO_DA]-(p)
+        WHERE p.pausado = true
+        WITH count(p) as qtdPausado, qtd, c
+        RETURN collect({cliente: c{.*},
+            quantidadeProjetosAtivos: toFloat((qtd - qtdPausado)),
+            quantidadeProjetosPausados: toFloat(qtdPausado)
+        })
     `,
 
     NovoClientes:`
@@ -48,8 +54,8 @@ exports.cql = {
         coalesce($textoPesquisar, '') AS pTextoPesquisa
 
         MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
-        WHERE c.nome = pNomeCliente AND p.dataInicio >= pDataInicio AND p.nome CONTAINS pTextoPesquisa
-        RETURN collect(p{.*, dataInicioInter: toFloat(p.dataInicio)}) as projetos
+        WHERE c.nome CONTAINS pNomeCliente AND p.dataInicio >= pDataInicio AND p.nome CONTAINS pTextoPesquisa
+        RETURN collect(p{.*, dataInicioInter: toFloat(p.dataInicio), cliente: c.nome}) as projetos
     `,
 
     VerificarCliente: `
@@ -342,10 +348,95 @@ exports.cql = {
         RETURN collect({nome: c.nome, reg: toFloat(c.reg), funcao: c.funcao})
     `,
 
+    DominioFuncao: `
+        MATCH (f:Funcao)
+        WITH f
+        ORDER BY f.nome
+        RETURN collect(f.nome)
+    `,
+
     RdoDoDia: `
         WITH $dataHora AS pDataHora
         MATCH (r:RDO)
         WHERE r.id_rdo >= pDataHora
         RETURN toFloat(count(r))
+    `,
+
+    Colaboradores:`
+        WITH $textoPesquisar AS pNomePesquisa,
+        $status AS pStatus
+        MATCH (c:Colaborador)
+        WHERE (
+                toUpper(c.nome) CONTAINS toUpper(pNomePesquisa) 
+                OR toUpper(c.email) CONTAINS toUpper(pNomePesquisa) 
+                OR toUpper(c.funcao) CONTAINS toUpper(pNomePesquisa)
+                OR toString(c.cpf) CONTAINS pNomePesquisa
+                OR toString(c.reg) CONTAINS pNomePesquisa
+            )
+            AND c.status = pStatus
+        WITH c
+        ORDER BY c.nome DESC
+        RETURN collect( c{.*, cpf: toFloat(c.cpf), reg: toFloat(c.reg) })
+    `,
+
+    NovoColaborador: `
+        CREATE (c:Colaborador)
+        SET c = $colaborador
+    `,
+    
+    VerificarColaborador:`
+        WITH $colaborador.nome AS pNomeColaborador
+        MATCH (c:Colaborador)
+        WHERE toUpper(c.nome) = toUpper(pNomeColaborador)
+        RETURN toFloat(count(c))
+    `,
+
+    EditarColaborador: `
+        WITH $colaborador AS pColaborador
+        MATCH (c:Colaborador {
+            reg: pColaborador.reg,
+            dataCriacao: pColaborador.dataCriacao,
+            nome: pColaborador.nome
+        })
+        SET c.email = pColaborador.email,
+        c.telefone = pColaborador.telefone,
+        c.cpf = pColaborador.cpf,
+        c.funcao = pColaborador.funcao
+    `,
+    AlterarStatusColaborador: `
+        WITH $colaborador AS pColaborador
+        MATCH (c:Colaborador {
+            reg: pColaborador.reg,
+            dataCriacao: pColaborador.dataCriacao,
+            nome: pColaborador.nome
+        })
+        SET c.status = pColaborador.status
+    `,
+
+    Funcao: `
+        WITH $textoPesquisar AS pNomePesquisa
+        MATCH (f:Funcao)
+        WHERE toUpper(f.nome) CONTAINS toUpper(pNomePesquisa)
+        WITH f
+        ORDER BY f.nome DESC
+        RETURN collect( f{.*})
+    `,
+    NovaFuncao: `
+        WITH $novoNomeFuncao AS pNovoNomeFuncao
+        MERGE (f:Funcao {
+            nome: pNovoNomeFuncao
+        })
+    `,
+    VerificarFuncao: `
+        WITH $novoNomeFuncao AS pNovoNomeFuncao
+        MATCH (f:Funcao)
+        WHERE f.nome = pNovoNomeFuncao
+        RETURN toFloat(count(f))
+    `,
+    DeletarFuncao: `
+        WITH $nomeFuncao AS pNomeFuncao
+        MATCH (f:Funcao)
+        WHERE f.nome = pNomeFuncao
+        DELETE f
     `
 }
