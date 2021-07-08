@@ -35,6 +35,21 @@ router.get('/dominio/clientes-ativos', controller.dominioClientesAtivos)
 router.get('/dominio/projetos-clientes', controller.dominioProjetosClientes)
 router.get('/dominio/colaboradores', controller.dominioColaboradores)
 router.get('/dominio/funcao', controller.dominioFuncao)
+router.get('/dominio/permissao', controller.dominioPermissao)
 
 router.post('/aws-pdf', controller.awsPdf)
+router.post('/aws-pdf-finalizado', controller.awsPdfFinalizado)
+
+router.post('/rdos-user', controller.rdosUser)
+router.post('/upload-pdf', controller.uploadPdf)
+router.post('/finalizar-rdo', controller.finalizarRDO)
+
+router.post('/get-senha', controller.getSenha)
+router.post('/nova-senha', controller.novaSenha)
+router.post('/criar-acesso', controller.criarAcesso)
+router.post('/user-colaboradores', controller.userColaboradores)
+
+router.post('/get-user', controller.getUser)
+router.post('/set-permissao', controller.setPermissao)
+router.post('/new-permissao', controller.newPermissao)
 module.exports = router;

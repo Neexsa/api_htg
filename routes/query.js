@@ -113,7 +113,10 @@ exports.cql = {
             $terminoReal AS pTerminoReal,
             $inicioPrevisto AS pInicioPrevisto,
             $terminoPrevisto AS pTerminoPrevisto,
-            $comentarios AS pComentarios
+            $comentarios AS pComentarios,
+            $status AS pStatus,
+            $dataCriacao AS pDataCriacao,
+            $dataFinalizado AS pDataFinalizado
 
         MERGE (r:RDO {
             cliente: pNomeCliente,
@@ -143,7 +146,11 @@ exports.cql = {
         r.terminoReal = pTerminoReal,
         r.inicioPrevisto = pInicioPrevisto,
         r.terminoPrevisto = pTerminoPrevisto,
-        r.comentarios = pComentarios
+        r.comentarios = pComentarios,
+        r.status = pStatus,
+        r.dataCriacao = pDataCriacao,
+        r.dataFinalizado = pDataFinalizado
+
 
         WITH pNomeCliente, pNomeProjetos, pIdRDO
 
@@ -179,7 +186,10 @@ exports.cql = {
             $terminoReal AS pTerminoReal,
             $inicioPrevisto AS pInicioPrevisto,
             $terminoPrevisto AS pTerminoPrevisto,
-            $comentarios AS pComentarios
+            $comentarios AS pComentarios,
+            $status AS pStatus,
+            $dataCriacao AS pDataCriacao,
+            $dataFinalizado AS pDataFinalizado
 
         MATCH (r:RDO {
             cliente: pNomeCliente,
@@ -209,7 +219,10 @@ exports.cql = {
         r.terminoReal = pTerminoReal,
         r.inicioPrevisto = pInicioPrevisto,
         r.terminoPrevisto = pTerminoPrevisto,
-        r.comentarios = pComentarios
+        r.comentarios = pComentarios,
+        r.status = pStatus,
+        r.dataCriacao = pDataCriacao,
+        r.dataFinalizado = pDataFinalizado
     `,
 
     NovoRdoEfetivos: `
@@ -355,6 +368,13 @@ exports.cql = {
         RETURN collect(f.nome)
     `,
 
+    DominioPermissao: `
+        MATCH (p:Permissao)
+        WITH p
+        ORDER BY p.item
+        RETURN collect(p.item)
+    `,
+
     RdoDoDia: `
         WITH $dataHora AS pDataHora
         MATCH (r:RDO)
@@ -438,5 +458,91 @@ exports.cql = {
         MATCH (f:Funcao)
         WHERE f.nome = pNomeFuncao
         DELETE f
+    `,
+
+    RdosUser: `
+        WITH coalesce($dataInicio, -30599326412000) AS pDataInicio,
+        $textoPesquisar AS pTextoPesquisar,
+        $nomeCliente AS pNomeCliente,
+        $nomeProjetos AS pNomeProjetos,
+        $nomeUser AS pNomeUser
+
+        MATCH (r:RDO)
+        WHERE r.dataInicio >= pDataInicio 
+        AND toUpper(r.cliente) CONTAINS toUpper(pNomeCliente) 
+        AND toUpper(r.projeto) CONTAINS toUpper(pNomeProjetos)
+        AND toUpper(r.nomeFiscal) CONTAINS toUpper(pNomeUser)
+
+        OPTIONAL MATCH (r)<-[:ATIVIDADE_DA]-(a:Atividades)
+        WITH r, collect(a{.*}) as atividades
+
+        OPTIONAL MATCH (r)<-[:EFETIVO_DA]-(e:Efetivos)
+        WITH r, atividades, collect(e{.*}) as efetivos
+        
+        ORDER BY r.id_rdo DESC
+        RETURN collect({rdo: r{.*}, atividade: atividades, efetivos: efetivos})
+    `,
+
+    FinalizarRDO: `
+        MATCH (r:RDO)
+        WHERE r.id_rdo = $idRDO
+        SET r.status = $status,
+            r.dataFinalizado = $dataFinalizado
+    `,
+
+    GetSenha: `
+        MATCH (n:User)
+        WHERE n.nome = $nomeUser AND n.email = $emailUser
+        RETURN n.senha
+    `,
+
+    NovaSenha: `
+        MATCH (n:User)
+        WHERE n.nome = $nomeUser AND n.email = $emailUser
+        SET n.senha = $novaSenha
+    `,
+
+    CriarAcesso: `
+        MERGE (n:User {email: $email})
+        SET n.nome = $nome,
+             n.senha = $cpf
+    `,
+
+    UserColaboradores: `
+        WITH $textoPesquisar AS pNomePesquisa,
+        $status AS pStatus
+        MATCH (u:User)
+        WITH collect(u.email) AS user, pNomePesquisa, pStatus
+        MATCH (c:Colaborador)
+        WHERE NOT c.email IN user AND 
+            (
+                toUpper(c.nome) CONTAINS toUpper(pNomePesquisa) 
+                OR toUpper(c.email) CONTAINS toUpper(pNomePesquisa) 
+                OR toUpper(c.funcao) CONTAINS toUpper(pNomePesquisa)
+                OR toString(c.cpf) CONTAINS pNomePesquisa
+                OR toString(c.reg) CONTAINS pNomePesquisa
+            )
+            AND c.status = pStatus
+        WITH c
+        ORDER BY c.nome DESC
+        RETURN collect( c{.*, cpf: toFloat(c.cpf), reg: toFloat(c.reg) })
+    `,
+
+    GetUser: `
+        WITH $textoPesquisar AS pNomePesquisa
+        MATCH (u:User)
+        WHERE (toUpper(u.nome) CONTAINS toUpper(pNomePesquisa) 
+        OR toUpper(u.email) CONTAINS toUpper(pNomePesquisa))
+        RETURN collect(u{.*})
+    `,
+
+    SetPermissao: `
+        MATCH (u:User)
+        WHERE u.email = $email
+        SET u.permissao = $permissoes
+    `,
+
+    NewPermissao: `
+        MERGE (n:Permissao {item: $novaPermissao})
     `
 }

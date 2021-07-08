@@ -173,6 +173,8 @@ exports.novoRdo = async (req, res, next) => {
         let body = req.body
         let cql = ''
 
+        let tipo = body.tipo
+
         let params = {
             nomeCliente: body.nomeCliente,
             nomeProjetos: body.nomeProjetos,
@@ -199,7 +201,10 @@ exports.novoRdo = async (req, res, next) => {
             terminoReal: body.terminoReal,
             inicioPrevisto: body.inicioPrevisto,
             terminoPrevisto: body.terminoPrevisto,
-            comentarios: body.comentarios
+            comentarios: body.comentarios,
+            status: tipo === 'salvar' ? 'Criado' : 'Enviado',
+            dataCriacao: body.dataCriacao,
+            dataFinalizado: body.dataFinalizado
         }
         cql = query.cql.NovoRdo;
         await db.neo4j.executeCypherAsync(cql, params)
@@ -232,45 +237,48 @@ exports.novoRdo = async (req, res, next) => {
             }
         }
 
-        const filePath = path.join(__dirname, "pdf.ejs")
+        if (tipo === 'finalizar') {
+            const filePath = path.join(__dirname, "pdf.ejs")
+    
+            aws.config.update({
+                accessKeyId: 'AKIA3W7SB22BQZO67YLE',
+                secretAccessKey: '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',
+                region: 'sa-east-1'
+            })
+    
+            const s3 = new aws.S3();
+    
+    
+            ejs.renderFile(filePath, {body}, (err, html) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    console.log(html)
+    
+                    pdf.create(html,{
+                        format: "A4"
+                    }).toStream(function(err, stream){
+                        if (err) return res.status(500).send(err)
+                        // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
+                        const params = {
+                            s3,
+                            Bucket: 'neexsa-htg-pdfs',
+                            acl: 'public-read',
+                            Key: `${body.dataIDRDO}.pdf`,
+                            Body: stream,
+                            ContentType: 'application/pdf',
+                        };
+                        s3.upload(params, (err, res) => {
+                            if (err) {
+                                console.log(err, 'err');
+                            }
+                            console.log(res, 'res');
+                        });
+                    }) 
+                }
+            })
+        }
 
-        aws.config.update({
-            accessKeyId: 'AKIA3W7SB22BQZO67YLE',
-            secretAccessKey: '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',
-            region: 'sa-east-1'
-        })
-
-        const s3 = new aws.S3();
-
-
-        ejs.renderFile(filePath, {body}, (err, html) => {
-            if (err) {
-                console.log(err)
-            } else {
-                console.log(html)
-
-                pdf.create(html,{
-                    format: "A4"
-                }).toStream(function(err, stream){
-                    if (err) return res.status(500).send(err)
-                    // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
-                    const params = {
-                        s3,
-                        Bucket: 'neexsa-htg-pdfs',
-                        acl: 'public-read',
-                        Key: `${body.dataIDRDO}.pdf`,
-                        Body: stream,
-                        ContentType: 'application/pdf',
-                    };
-                    s3.upload(params, (err, res) => {
-                        if (err) {
-                            console.log(err, 'err');
-                        }
-                        console.log(res, 'res');
-                    });
-                }) 
-            }
-        })
 
         res.status(200).send({mensagem: 'RDO salvo com sucesso'})
     }catch (e){
@@ -282,6 +290,8 @@ exports.editarRdo = async (req, res, next) => {
     try{
         let body = req.body
         let cql = ''
+
+        let tipo = body.tipo
 
         let params = {
             nomeCliente: body.nomeCliente,
@@ -309,7 +319,10 @@ exports.editarRdo = async (req, res, next) => {
             terminoReal: body.terminoReal,
             inicioPrevisto: body.inicioPrevisto,
             terminoPrevisto: body.terminoPrevisto,
-            comentarios: body.comentarios
+            comentarios: body.comentarios,
+            status: tipo === 'salvar' ? 'Criado' : 'Enviado',
+            dataCriacao: body.dataCriacao,
+            dataFinalizado: body.dataFinalizado
         }
         cql = query.cql.EditarRdo;
         await db.neo4j.executeCypherAsync(cql, params)
@@ -348,45 +361,48 @@ exports.editarRdo = async (req, res, next) => {
             }
         }
 
-        const filePath = path.join(__dirname, "pdf.ejs")
+        if (tipo === 'finalizar') {
 
-        aws.config.update({
-            accessKeyId: 'AKIA3W7SB22BQZO67YLE',
-            secretAccessKey: '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',
-            region: 'sa-east-1'
-        })
-
-        const s3 = new aws.S3();
-
-
-        ejs.renderFile(filePath, {body}, (err, html) => {
-            if (err) {
-                console.log(err)
-            } else {
-                console.log(html)
-
-                pdf.create(html,{
-                    format: "A4"
-                }).toStream(function(err, stream){
-                    if (err) return res.status(500).send(err)
-                    // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
-                    const params = {
-                        s3,
-                        Bucket: 'neexsa-htg-pdfs',
-                        acl: 'public-read',
-                        Key: `${body.dataIDRDO}.pdf`,
-                        Body: stream,
-                        ContentType: 'application/pdf',
-                    };
-                    s3.upload(params, (err, res) => {
-                        if (err) {
-                            console.log(err, 'err');
-                        }
-                        console.log(res, 'res');
-                    });
-                }) 
-            }
-        })
+            const filePath = path.join(__dirname, "pdf.ejs")
+    
+            aws.config.update({
+                accessKeyId: 'AKIA3W7SB22BQZO67YLE',
+                secretAccessKey: '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',
+                region: 'sa-east-1'
+            })
+    
+            const s3 = new aws.S3();
+    
+    
+            ejs.renderFile(filePath, {body}, (err, html) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    console.log(html)
+    
+                    pdf.create(html,{
+                        format: "A4"
+                    }).toStream(function(err, stream){
+                        if (err) return res.status(500).send(err)
+                        // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
+                        const params = {
+                            s3,
+                            Bucket: 'neexsa-htg-pdfs',
+                            acl: 'public-read',
+                            Key: `${body.dataIDRDO}.pdf`,
+                            Body: stream,
+                            ContentType: 'application/pdf',
+                        };
+                        s3.upload(params, (err, res) => {
+                            if (err) {
+                                console.log(err, 'err');
+                            }
+                            console.log(res, 'res');
+                        });
+                    }) 
+                }
+            })
+        }
 
         res.status(200).send({mensagem: 'RDO salvo com sucesso'})
     }catch (e){
@@ -450,6 +466,16 @@ exports.dominioColaboradores = async (req, res, next) => {
 exports.dominioFuncao = async (req, res, next) => {
     try{
         let cql = query.cql.DominioFuncao;
+        let result = await db.neo4j.executeCypherAsync(cql)
+        res.status(200).send(result)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar as Funções'})
+    }
+}
+
+exports.dominioPermissao = async (req, res, next) => {
+    try{
+        let cql = query.cql.DominioPermissao;
         let result = await db.neo4j.executeCypherAsync(cql)
         res.status(200).send(result)
     }catch (e){
@@ -614,6 +640,27 @@ exports.awsPdf = async (req, res, next) => {
     
 }
 
+exports.awsPdfFinalizado = async (req, res, next) => {
+    const id = req.body.id
+
+    console.log(`RdosFinalizados/${id}.pdf`)
+
+    const s3 = new aws.S3()
+    aws.config.update({accessKeyId: 'AKIA3W7SB22BQZO67YLE', secretAccessKey: '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'})
+
+    const myBucket = 'neexsa-htg-pdfs-finalizados'
+    const myKey = `${id}.pdf`
+    const signedUrlExpireSeconds = 60 * 5 // your expiry time in seconds.
+
+    const url = s3.getSignedUrl('getObject', {
+        Bucket: myBucket,
+        Key: myKey,
+        Expires: signedUrlExpireSeconds
+       })
+
+    res.send(url)
+}
+
 exports.colaboradores = async (req, res, next) => {
     try{
         let body = req.body
@@ -675,5 +722,153 @@ exports.deleteFuncao = async (req, res, next) => {
         res.status(200).send({mensagem: 'Deletado com sucesso'})
     }catch (e){
         res.status(500).send({resposta: e, message: 'Não foi possivel deletar a Função'})
+    }
+}
+
+exports.rdosUser = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            dataInicio: body.dataInicio ? body.dataInicio : null,
+            textoPesquisar: body.textoPesquisar ? body.textoPesquisar : '',
+            nomeCliente: body.nomeCliente ? body.nomeCliente : '',
+            nomeProjetos: body.nomeProjetos ? body.nomeProjetos : '',
+            nomeUser: body.nomeUser ? body.nomeUser : ''
+        }
+        let cql = query.cql.RdosUser;
+        let result = await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send(result)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar as RDOs'})
+    }
+}
+
+exports.uploadPdf = async (req, res, next) => {
+    try {
+        const pdf = req.files
+        const name = req.nome
+        console.log(pdf, name)
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+exports.finalizarRDO = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            idRDO: body.idRDO,
+            status: body.status,
+            dataFinalizado: body.dataFinalizado
+        }
+        let cql = query.cql.FinalizarRDO;
+        await db.neo4j.executeCypherAsync(cql, params)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar as RDOs'})
+    }
+}
+
+exports.getSenha = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            nomeUser: body.nomeUser,
+            emailUser: body.emailUser
+        }
+        let cql = query.cql.GetSenha;
+        let senha = await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({senha})
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar a Senha'})
+    }
+}
+
+exports.novaSenha = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            nomeUser: body.nomeUser,
+            emailUser: body.emailUser,
+            novaSenha: body.novaSenha
+        }
+        let cql = query.cql.NovaSenha;
+        await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({ message: 'Senha salva!!!'})
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar as RDOs'})
+    }
+}
+
+exports.criarAcesso= async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            cpf: body.cpf,
+            email: body.email,
+            nome: body.nome
+        }
+        let cql = query.cql.CriarAcesso;
+        await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({ message: 'Senha salva!!!'})
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar as RDOs'})
+    }
+}
+
+exports.userColaboradores = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            textoPesquisar: body.textoPesquisar ? body.textoPesquisar : '',
+            status: body.status
+        }
+        let cql = query.cql.UserColaboradores;
+        let result = await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send(result)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar os Colaboradores'})
+    }
+}
+
+exports.getUser = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            textoPesquisar: body.textoPesquisar ? body.textoPesquisar : ''
+        }
+        let cql = query.cql.GetUser;
+        let result = await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send(result)
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel buscar os Colaboradores'})
+    }
+}
+
+exports.setPermissao = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            email: body.email,
+            permissoes: body.permissoes
+        }
+        let cql = query.cql.SetPermissao;
+        await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({message: 'Permissões salvas'})
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel salvar as Permissoes'})
+    }
+}
+
+exports.newPermissao = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            novaPermissao: body.novaPermissao
+        }
+        let cql = query.cql.NewPermissao;
+        await db.neo4j.executeCypherAsync(cql, params)
+        res.status(200).send({message: 'Permissões salvas'})
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel salvar as Permissoes'})
     }
 }
