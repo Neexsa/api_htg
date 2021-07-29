@@ -39,6 +39,8 @@ router.get('/dominio/permissao', controller.dominioPermissao)
 
 router.post('/aws-pdf', controller.awsPdf)
 router.post('/aws-pdf-finalizado', controller.awsPdfFinalizado)
+router.post('/aws-assinatura', controller.assinaturaAws)
+router.post('/aws-assinatura-user', controller.assinaturaUserAws)
 
 router.post('/rdos-user', controller.rdosUser)
 router.post('/upload-pdf', controller.uploadPdf)
@@ -52,4 +54,6 @@ router.post('/user-colaboradores', controller.userColaboradores)
 router.post('/get-user', controller.getUser)
 router.post('/set-permissao', controller.setPermissao)
 router.post('/new-permissao', controller.newPermissao)
+
+router.post('/get-seguencia-rdo', controller.getSeguenciaRdo)
 module.exports = router;

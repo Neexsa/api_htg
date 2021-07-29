@@ -116,14 +116,16 @@ exports.cql = {
             $comentarios AS pComentarios,
             $status AS pStatus,
             $dataCriacao AS pDataCriacao,
-            $dataFinalizado AS pDataFinalizado
+            $dataFinalizado AS pDataFinalizado,
+            $sequencial AS pSequencial
 
         MERGE (r:RDO {
             cliente: pNomeCliente,
             projeto: pNomeProjetos,
             dataInicio: pDateInicio,
             id_rdo: pIdRDO,
-            areaAtuacao: pAreaAtuacao
+            areaAtuacao: pAreaAtuacao,
+            sequencia: pSequencial
         })
 
         SET r.cartaChamada = pCartaChamada,
@@ -189,13 +191,16 @@ exports.cql = {
             $comentarios AS pComentarios,
             $status AS pStatus,
             $dataCriacao AS pDataCriacao,
-            $dataFinalizado AS pDataFinalizado
+            $dataFinalizado AS pDataFinalizado,
+            $sequencial AS pSequencial,
+            $comentariosContratante AS pComentariosContratante
 
         MATCH (r:RDO {
             cliente: pNomeCliente,
             projeto: pNomeProjetos,
             dataInicio: pDateInicio,
-            id_rdo: pIdRDO
+            id_rdo: pIdRDO,
+            sequencia: pSequencial
         })
 
         SET r.areaAtuacao = pAreaAtuacao,
@@ -222,7 +227,8 @@ exports.cql = {
         r.comentarios = pComentarios,
         r.status = pStatus,
         r.dataCriacao = pDataCriacao,
-        r.dataFinalizado = pDataFinalizado
+        r.dataFinalizado = pDataFinalizado,
+        r.comentariosContratante = pComentariosContratante
     `,
 
     NovoRdoEfetivos: `
@@ -468,7 +474,7 @@ exports.cql = {
         $nomeUser AS pNomeUser
 
         MATCH (r:RDO)
-        WHERE r.dataInicio >= pDataInicio 
+        WHERE (r.status = 'Enviado' OR r.status = 'Assinado') AND r.dataInicio >= pDataInicio 
         AND toUpper(r.cliente) CONTAINS toUpper(pNomeCliente) 
         AND toUpper(r.projeto) CONTAINS toUpper(pNomeProjetos)
         AND toUpper(r.nomeFiscal) CONTAINS toUpper(pNomeUser)
@@ -544,5 +550,17 @@ exports.cql = {
 
     NewPermissao: `
         MERGE (n:Permissao {item: $novaPermissao})
+    `,
+
+    GetSeguenciaRdo: `
+        MATCH (r:RDO)
+        WHERE r.cliente = $nomeCliente AND r.projeto = $nomeProjetos
+        RETURN toFloat(count(r))
+    `,
+
+    GetIdFiscal: `
+        MATCH (c:Colaborador)
+        WHERE c.email = $emailFiscal
+        RETURN c.reg
     `
 }

@@ -178,7 +178,7 @@ exports.novoRdo = async (req, res, next) => {
         let params = {
             nomeCliente: body.nomeCliente,
             nomeProjetos: body.nomeProjetos,
-            dateInicio: body.dateFormatted,
+            dateInicio: body.dataIDRDO,
             idRDO: body.dataIDRDO,
             areaAtuacao: body.areaAtuacao,
             cartaChamada: body.cartaChamada,
@@ -204,7 +204,8 @@ exports.novoRdo = async (req, res, next) => {
             comentarios: body.comentarios,
             status: tipo === 'salvar' ? 'Criado' : 'Enviado',
             dataCriacao: body.dataCriacao,
-            dataFinalizado: body.dataFinalizado
+            dataFinalizado: body.dataFinalizado,
+            sequencial: body.sequencial
         }
         cql = query.cql.NovoRdo;
         await db.neo4j.executeCypherAsync(cql, params)
@@ -237,48 +238,6 @@ exports.novoRdo = async (req, res, next) => {
             }
         }
 
-        if (tipo === 'finalizar') {
-            const filePath = path.join(__dirname, "pdf.ejs")
-    
-            aws.config.update({
-                accessKeyId: 'AKIA3W7SB22BQZO67YLE',
-                secretAccessKey: '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',
-                region: 'sa-east-1'
-            })
-    
-            const s3 = new aws.S3();
-    
-    
-            ejs.renderFile(filePath, {body}, (err, html) => {
-                if (err) {
-                    console.log(err)
-                } else {
-                    console.log(html)
-    
-                    pdf.create(html,{
-                        format: "A4"
-                    }).toStream(function(err, stream){
-                        if (err) return res.status(500).send(err)
-                        // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
-                        const params = {
-                            s3,
-                            Bucket: 'neexsa-htg-pdfs',
-                            acl: 'public-read',
-                            Key: `${body.dataIDRDO}.pdf`,
-                            Body: stream,
-                            ContentType: 'application/pdf',
-                        };
-                        s3.upload(params, (err, res) => {
-                            if (err) {
-                                console.log(err, 'err');
-                            }
-                            console.log(res, 'res');
-                        });
-                    }) 
-                }
-            })
-        }
-
 
         res.status(200).send({mensagem: 'RDO salvo com sucesso'})
     }catch (e){
@@ -296,7 +255,7 @@ exports.editarRdo = async (req, res, next) => {
         let params = {
             nomeCliente: body.nomeCliente,
             nomeProjetos: body.nomeProjetos,
-            dateInicio: body.dateFormatted,
+            dateInicio: body.dataIDRDO,
             idRDO: body.dataIDRDO,
             areaAtuacao: body.areaAtuacao,
             cartaChamada: body.cartaChamada,
@@ -320,11 +279,19 @@ exports.editarRdo = async (req, res, next) => {
             inicioPrevisto: body.inicioPrevisto,
             terminoPrevisto: body.terminoPrevisto,
             comentarios: body.comentarios,
-            status: tipo === 'salvar' ? 'Criado' : 'Enviado',
+            status: tipo === 'salvar' ? 'Criado' : tipo === 'finalizar' ? 'Enviado' : 'Assinado',
             dataCriacao: body.dataCriacao,
-            dataFinalizado: body.dataFinalizado
+            dataFinalizado: body.dataFinalizado,
+            sequencial: body.sequencial,
+            comentariosContratante: body.comentariosContratante
         }
         cql = query.cql.EditarRdo;
+        await db.neo4j.executeCypherAsync(cql, params)
+
+        cql = query.cql.DeleteRdoEfetivos;
+        await db.neo4j.executeCypherAsync(cql, params)
+
+        cql = query.cql.DeleteRdoAtividade;
         await db.neo4j.executeCypherAsync(cql, params)
 
         let efetivoArray = body.efetivos
@@ -334,8 +301,6 @@ exports.editarRdo = async (req, res, next) => {
             item.idRDO = body.dataIDRDO
 
             try {
-                cql = query.cql.DeleteRdoEfetivos;
-                await db.neo4j.executeCypherAsync(cql, item)
 
                 cql = query.cql.NovoRdoEfetivos;
                 await db.neo4j.executeCypherAsync(cql, item)
@@ -351,9 +316,6 @@ exports.editarRdo = async (req, res, next) => {
             item.idRDO = body.dataIDRDO
 
             try {
-                cql = query.cql.DeleteRdoAtividade;
-                await db.neo4j.executeCypherAsync(cql, item)
-
                 cql = query.cql.NovoRdoAtividade;
                 await db.neo4j.executeCypherAsync(cql, item)
             } catch (err) {
@@ -361,7 +323,7 @@ exports.editarRdo = async (req, res, next) => {
             }
         }
 
-        if (tipo === 'finalizar') {
+        if (tipo === 'assinar') {
 
             const filePath = path.join(__dirname, "pdf.ejs")
     
@@ -871,4 +833,86 @@ exports.newPermissao = async (req, res, next) => {
     }catch (e){
         res.status(500).send({resposta: e, message: 'Não foi possivel salvar as Permissoes'})
     }
+}
+
+exports.getSeguenciaRdo = async (req, res, next) => {
+    try{
+        let body = req.body
+        let params = {
+            nomeCliente: body.nomeCliente,
+            nomeProjetos: body.nomeProjetos
+        }
+        let cql = query.cql.GetSeguenciaRdo;
+        let seguencia = await db.neo4j.executeCypherAsync(cql, params)
+        let numSeg = 0
+        if (seguencia > 0) {
+            numSeg = seguencia + 1
+            res.status(200).send({numSeguencia: numSeg})
+        } else {
+            numSeg = 1
+            res.status(200).send({numSeguencia: numSeg})
+        }
+    }catch (e){
+        res.status(500).send({resposta: e, message: 'Não foi possivel salvar as Permissoes'})
+    }
+}
+
+exports.assinaturaAws = async (req, res, next) => {
+
+    const idFiscal = req.body.idFiscal
+
+    // console.log(`RdosFinalizados/${id}.pdf`)
+
+    const s3 = new aws.S3()
+    aws.config.update({accessKeyId: 'AKIA3W7SB22BQZO67YLE', secretAccessKey: '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'})
+
+    const myBucket = 'neexsa-htg-pdfs-finalizados'
+    const myKey = `${idFiscal}.pdf`
+    // const myKey = 'assinatura.jpg'
+    const signedUrlExpireSeconds = 60 * 5 // your expiry time in seconds.
+
+    const url = s3.getSignedUrl('getObject', {
+        Bucket: myBucket,
+        Key: myKey,
+        Expires: signedUrlExpireSeconds
+       })
+
+    res.send(url)
+    
+}
+
+exports.assinaturaUserAws = async (req, res, next) => {
+
+    try {
+        let body = req.body
+        let params = {
+            emailFiscal: body.emailFiscal
+        }
+        let cql = query.cql.GetIdFiscal;
+        let id = await db.neo4j.executeCypherAsync(cql, params)
+
+
+        const idFiscal = id
+    
+
+        const s3 = new aws.S3()
+        aws.config.update({accessKeyId: 'AKIA3W7SB22BQZO67YLE', secretAccessKey: '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'})
+    
+        const myBucket = 'neexsa-htg-pdfs-finalizados'
+        const myKey = `${idFiscal}.pdf`
+        // const myKey = 'assinatura.jpg'
+        const signedUrlExpireSeconds = 60 * 5 // your expiry time in seconds.
+    
+        const url = s3.getSignedUrl('getObject', {
+            Bucket: myBucket,
+            Key: myKey,
+            Expires: signedUrlExpireSeconds
+           })
+    
+        res.send({url, id})
+    } catch (err) {
+
+    }
+
+    
 }
