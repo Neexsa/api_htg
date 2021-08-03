@@ -251,10 +251,10 @@ exports.editarRdo = async (req, res, next) => {
         let cql = ''
 
         let tipo = body.tipo
-        let nomeFiscalSplit = body.nomeFiscal.split('-')
-        body.nomeFiscalSplit = nomeFiscalSplit[1].trim()
-        let nomeEncarregadoSplit = body.nomeEncarregado.split('-')
-        body.nomeEncarregadoSplit = nomeEncarregadoSplit[1].trim()
+        let nomeFiscalSplit = body.nomeFiscal ? body.nomeFiscal.split('-') : ''
+        body.nomeFiscalSplit = nomeFiscalSplit ? nomeFiscalSplit[1].trim() : ''
+        let nomeEncarregadoSplit = body.nomeEncarregado ? body.nomeEncarregado.split('-') : ''
+        body.nomeEncarregadoSplit = nomeEncarregadoSplit ? nomeEncarregadoSplit[1].trim() : ''
 
         let params = {
             nomeCliente: body.nomeCliente,
