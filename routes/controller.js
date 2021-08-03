@@ -348,7 +348,7 @@ exports.editarRdo = async (req, res, next) => {
                     console.log(html)
     
                     pdf.create(html,{
-                        "format": "A3",
+                        "format": "A2",
                         "orientation": "landscape"
                     }).toStream(function(err, stream){
                         if (err) return res.status(500).send(err)
