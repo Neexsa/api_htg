@@ -340,7 +340,7 @@ exports.editarRdo = async (req, res, next) => {
             const s3 = new aws.S3();
     
     
-            ejs.renderFile(filePath, {body}, (err, html) => {
+            await ejs.renderFile(filePath, {body}, (err, html) => {
                 if (err) {
                     console.log(err)
                 } else {
@@ -353,7 +353,7 @@ exports.editarRdo = async (req, res, next) => {
                         stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
                         const params = {
                             s3,
-                            Bucket: 'neexsa-htg-pdfs',
+                            Bucket: 'neexsa-htg-pdfs-finalizados',
                             acl: 'public-read',
                             Key: `${body.dataIDRDO}.pdf`,
                             Body: stream,
