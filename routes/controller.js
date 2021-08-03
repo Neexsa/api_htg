@@ -340,7 +340,6 @@ exports.editarRdo = async (req, res, next) => {
     
             const s3 = new aws.S3();
     
-    
             await ejs.renderFile(filePath, {body}, (err, html) => {
                 if (err) {
                     console.log(err)
@@ -350,16 +349,22 @@ exports.editarRdo = async (req, res, next) => {
                         "format": "A4",
                         "orientation": "portrait"
                     }).toStream(function(err, stream){
+                        console.log(stream)
                         if (err) return res.status(500).send(err)
                         // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
+
                         const params = {
-                            Bucket: 'neexsa-htg-pdfs-finalizados',
+                            s3,
+                            Bucket: 'neexsa-htg-pdfs',
                             acl: 'public-read',
                             Key: `${body.dataIDRDO}.pdf`,
                             Body: stream,
                             ContentType: 'application/pdf',
                         };
-                        s3.upload(params, (err, res) => {
+
+                        var options = {partSize: 10 * 1024 * 1024, queueSize: 1};
+                        
+                        s3.upload(params, options, (err, res) => {
                             if (err) {
                                 console.log(err, 'err');
                             }
