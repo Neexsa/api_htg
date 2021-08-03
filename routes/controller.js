@@ -348,8 +348,8 @@ exports.editarRdo = async (req, res, next) => {
                     console.log(html)
     
                     pdf.create(html,{
-                        "format": "A4",
-                        "orientation": "landscape"
+                        "format": "A3",
+                        "orientation": "portrait"
                     }).toStream(function(err, stream){
                         if (err) return res.status(500).send(err)
                         // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
