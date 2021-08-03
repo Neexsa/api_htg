@@ -327,8 +327,8 @@ exports.editarRdo = async (req, res, next) => {
             }
         }
 
-        // if (tipo === 'assinar') {
-        if (tipo) {
+        if (tipo === 'assinar') {
+        // if (tipo) {
 
             const filePath = path.join(__dirname, "pdf.ejs")
     
