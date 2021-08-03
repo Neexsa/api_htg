@@ -353,7 +353,6 @@ exports.editarRdo = async (req, res, next) => {
                         if (err) return res.status(500).send(err)
                         // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
                         const params = {
-                            s3,
                             Bucket: 'neexsa-htg-pdfs-finalizados',
                             acl: 'public-read',
                             Key: `${body.dataIDRDO}.pdf`,
