@@ -56,4 +56,6 @@ router.post('/set-permissao', controller.setPermissao)
 router.post('/new-permissao', controller.newPermissao)
 
 router.post('/get-seguencia-rdo', controller.getSeguenciaRdo)
+
+router.get('/teste-pdf', controller.testePdf)
 module.exports = router;

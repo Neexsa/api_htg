@@ -251,6 +251,10 @@ exports.editarRdo = async (req, res, next) => {
         let cql = ''
 
         let tipo = body.tipo
+        let nomeFiscalSplit = body.nomeFiscal.split('-')
+        body.nomeFiscalSplit = nomeFiscalSplit[1].trim()
+        let nomeEncarregadoSplit = body.nomeEncarregado.split('-')
+        body.nomeEncarregadoSplit = nomeEncarregadoSplit[1].trim()
 
         let params = {
             nomeCliente: body.nomeCliente,
@@ -916,3 +920,48 @@ exports.assinaturaUserAws = async (req, res, next) => {
 
     
 }
+
+exports.testePdf = async (req, res, next) => {
+
+    const filePath = path.join(__dirname, "pdf.ejs")
+    
+    aws.config.update({
+        accessKeyId: 'AKIA3W7SB22BQZO67YLE',
+        secretAccessKey: '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',
+        region: 'sa-east-1'
+    })
+
+    const s3 = new aws.S3();
+
+
+    ejs.renderFile(filePath, (err, html) => {
+        if (err) {
+            console.log(err)
+        } else {
+            console.log(html)
+
+            pdf.create(html,{
+                format: "A4"
+            }).toStream(function(err, stream){
+                if (err) return res.status(500).send(err)
+                // stream.pipe(fs.createWriteStream(`${body.dataIDRDO}.pdf`));
+                const params = {
+                    s3,
+                    Bucket: 'neexsa-htg-pdfs',
+                    acl: 'public-read',
+                    Key: `teste.pdf`,
+                    Body: stream,
+                    ContentType: 'application/pdf',
+                };
+                s3.upload(params, (err, res) => {
+                    if (err) {
+                        console.log(err, 'err');
+                    }
+                    console.log(res, 'res');
+                });
+            }) 
+        }
+    })
+
+}
+    
