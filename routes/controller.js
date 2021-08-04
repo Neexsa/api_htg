@@ -178,7 +178,7 @@ exports.novoRdo = async (req, res, next) => {
         let params = {
             nomeCliente: body.nomeCliente,
             nomeProjetos: body.nomeProjetos,
-            dateInicio: body.dataIDRDO,
+            dateInicio: body.dateInicio,
             idRDO: body.dataIDRDO,
             areaAtuacao: body.areaAtuacao,
             cartaChamada: body.cartaChamada,
@@ -259,7 +259,7 @@ exports.editarRdo = async (req, res, next) => {
         let params = {
             nomeCliente: body.nomeCliente,
             nomeProjetos: body.nomeProjetos,
-            dateInicio: body.dataIDRDO,
+            dateInicio: body.dateInicio,
             idRDO: body.dataIDRDO,
             areaAtuacao: body.areaAtuacao,
             cartaChamada: body.cartaChamada,
@@ -462,6 +462,7 @@ exports.novoColaboradores = async (req, res, next) => {
                 reg: body.reg,
                 dataCriacao: body.dataCriacao,
                 nome: body.nomeColaborador,
+                matricula: body.matricula,
                 email: body.emailColaborador,
                 telefone: body.telefoneColaborador,
                 cpf: body.cpfColaborador,
@@ -491,6 +492,7 @@ exports.editarColaboradores = async (req, res, next) => {
                 reg: body.reg,
                 dataCriacao: body.dataCriacao,
                 nome: body.nomeColaborador,
+                matricula: body.matricula,
                 email: body.emailColaborador,
                 telefone: body.telefoneColaborador,
                 cpf: body.cpfColaborador,

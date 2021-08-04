@@ -364,7 +364,7 @@ exports.cql = {
         MATCH (c:Colaborador)
         WITH c
         ORDER BY c.nome
-        RETURN collect({nome: c.nome, reg: toFloat(c.reg), funcao: c.funcao})
+        RETURN collect({nome: c.nome, reg: toFloat(c.reg), matricula: toFloat(c.matricula), funcao: c.funcao})
     `,
 
     DominioFuncao: `
@@ -402,7 +402,7 @@ exports.cql = {
             AND c.status = pStatus
         WITH c
         ORDER BY c.nome DESC
-        RETURN collect( c{.*, cpf: toFloat(c.cpf), reg: toFloat(c.reg) })
+        RETURN collect( c{.*, cpf: toFloat(c.cpf), reg: toFloat(c.reg), matricula: toFloat(c.matricula)})
     `,
 
     NovoColaborador: `
@@ -427,7 +427,8 @@ exports.cql = {
         SET c.email = pColaborador.email,
         c.telefone = pColaborador.telefone,
         c.cpf = pColaborador.cpf,
-        c.funcao = pColaborador.funcao
+        c.funcao = pColaborador.funcao,
+        c.matricula = pColaborador.matricula
     `,
     AlterarStatusColaborador: `
         WITH $colaborador AS pColaborador
