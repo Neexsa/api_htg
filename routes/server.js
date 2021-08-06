@@ -14,6 +14,7 @@ router.post('/alterar-status-clientes', controller.alterarStatusCliente)
 
 router.post('/projetos', controller.projetos)
 router.post('/novo-projeto', controller.novoProjeto)
+router.post('/editar-projeto', controller.editarProjeto)
 router.post('/alterar-status-projeto', controller.alterarStatusProjeto)
 
 router.post('/rdos', controller.rdos)
@@ -55,7 +56,7 @@ router.post('/get-user', controller.getUser)
 router.post('/set-permissao', controller.setPermissao)
 router.post('/new-permissao', controller.newPermissao)
 
-router.post('/get-seguencia-rdo', controller.getSeguenciaRdo)
+router.post('/get-info-rdo', controller.getSeguenciaRdo)
 
 router.get('/teste-pdf', controller.testePdf)
 module.exports = router;

@@ -109,12 +109,46 @@ exports.projetos = async (req, res, next) => {
 exports.novoProjeto = async (req, res, next) => {
     try{
         let body = req.body
+        let cql = ''
         let params = {
-            nomeCliente: body.nomeCliente,
-            novoNomeProjeto: body.novoNomeProjeto,
-            dataInicio: body.dataInicio
+            dados: {
+                nomeCliente: body.nomeCliente,
+                novoNomeProjeto: body.novoNomeProjeto,
+                dataInicio: body.dataInicio,
+                dataFim: body.dataFim,
+                prorrogacao: body.prorrogacao,
+                idProjeto: body.idProjeto
+            }
         }
-        let cql = query.cql.NovoProjeto;
+        cql = query.cql.VerificarNomeProjeto;
+        let verificar = await db.neo4j.executeCypherAsync(cql, params)
+        if (verificar.length > 0) {
+            res.status(400).send({mensagem: 'Já existe um projeto com esse nome'})
+        } else {
+            cql = query.cql.NovoProjeto;
+            await db.neo4j.executeCypherAsync(cql, params)
+            res.status(200).send({mensagem: 'Projeto salvo com sucesso'})
+        }
+    }catch (e){
+        res.status(500).send({message: 'Não foi possivel fazer cadastro do projeto'})
+    }
+}
+
+exports.editarProjeto = async (req, res, next) => {
+    try{
+        let body = req.body
+        let cql = ''
+        let params = {
+            dados: {
+                nomeCliente: body.nomeCliente,
+                novoNomeProjeto: body.novoNomeProjeto,
+                dataInicio: body.dataInicio,
+                dataFim: body.dataFim,
+                prorrogacao: body.prorrogacao,
+                idProjeto: body.idProjeto
+            }
+        }
+        cql = query.cql.EditarProjeto;
         await db.neo4j.executeCypherAsync(cql, params)
         res.status(200).send({mensagem: 'Projeto salvo com sucesso'})
     }catch (e){
@@ -853,15 +887,14 @@ exports.getSeguenciaRdo = async (req, res, next) => {
             nomeCliente: body.nomeCliente,
             nomeProjetos: body.nomeProjetos
         }
-        let cql = query.cql.GetSeguenciaRdo;
-        let seguencia = await db.neo4j.executeCypherAsync(cql, params)
-        let numSeg = 0
-        if (seguencia > 0) {
-            numSeg = seguencia + 1
-            res.status(200).send({numSeguencia: numSeg})
+        let cql =query.cql.GetSeguenciaRdo;
+        let result = await db.neo4j.executeCypherAsync(cql, params)
+        if (result.seguencia > 0) {
+            result.numSeguencia = result.seguencia + 1
+            res.status(200).send(result)
         } else {
-            numSeg = 1
-            res.status(200).send({numSeguencia: numSeg})
+            result.numSeguencia = 1
+            res.status(200).send(result)
         }
     }catch (e){
         res.status(500).send({resposta: e, message: 'Não foi possivel salvar as Permissoes'})

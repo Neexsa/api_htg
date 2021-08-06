@@ -39,13 +39,40 @@ exports.cql = {
         SET c.ativo = pStatus
     `,
 
+    VerificarNomeProjeto: `
+        WITH $dados AS pDados
+        MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
+        WHERE c.nome = pDados.nomeCliente AND toUpper(p.nome) = toUpper(pDados.novoNomeProjeto)
+        RETURN collect(p.nome)
+    `,
+
     NovoProjeto: `
-        WITH $novoNomeProjeto AS pNovoNome, $dataInicio AS pDataInicio, $nomeCliente AS pNomeCliente
-        MERGE (:Projeto {nome: pNovoNome, dataInicio: pDataInicio, ativo: true, pausado: false})
-        WITH pNovoNome, pDataInicio, pNomeCliente
+        WITH $dados AS pDados
+        MERGE (:Projeto 
+            {
+                nome: pDados.novoNomeProjeto, 
+                dataInicio: pDados.dataInicio, 
+                dataFim: pDados.dataFim, 
+                ativo: true, 
+                pausado: false,
+                idProjeto: pDados.idProjeto,
+                prorrogacao: pDados.prorrogacao
+            })
+        WITH pDados
         MATCH (c:Cliente), (p:Projeto)
-        WHERE c.nome = pNomeCliente AND p.nome = pNovoNome AND p.dataInicio = pDataInicio
+        WHERE c.nome = pDados.nomeCliente AND p.nome = pDados.novoNomeProjeto
         CREATE (c)<-[:PROJETO_DA]-(p)
+    `,
+
+    EditarProjeto: `
+        WITH $dados AS pDados
+        MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
+        WHERE c.nome = pDados.nomeCliente AND p.nome = pDados.novoNomeProjeto
+        SET p.nome = pDados.novoNomeProjeto, 
+            p.dataInicio = pDados.dataInicio, 
+            p.dataFim = pDados.dataFim,
+            p.idProjeto = pDados.idProjeto,
+            p.prorrogacao = pDados.prorrogacao
     `,
 
     Projetos: `
@@ -55,7 +82,11 @@ exports.cql = {
 
         MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
         WHERE c.nome CONTAINS pNomeCliente AND p.dataInicio >= pDataInicio AND p.nome CONTAINS pTextoPesquisa
-        RETURN collect(p{.*, dataInicioInter: toFloat(p.dataInicio), cliente: c.nome}) as projetos
+        RETURN collect(p{.*, 
+            idProjeto: toFloat(p.idProjeto), 
+            dataInicioInter: toFloat(p.dataInicio), 
+            dataFimInter: toFloat(p.dataFim), 
+            cliente: c.nome}) as projetos
     `,
 
     VerificarCliente: `
@@ -554,9 +585,17 @@ exports.cql = {
     `,
 
     GetSeguenciaRdo: `
-        MATCH (r:RDO)
-        WHERE r.cliente = $nomeCliente AND r.projeto = $nomeProjetos
-        RETURN toFloat(count(r))
+        WITH $nomeCliente AS pNomeCliente, $nomeProjetos AS pNomeProjetos
+        MATCH (p:Projeto)-[:PROJETO_DA]->(c:Cliente)
+        WHERE c.nome = pNomeCliente AND p.nome = pNomeProjetos
+        WITH DISTINCT {dataInicio: p.dataInicio, 
+            dataFim: p.dataFim, 
+            prorrogacao: toFloat(p.prorrogacao)
+        } AS result, pNomeCliente, pNomeProjetos
+        OPTIONAL MATCH (r:RDO)
+        WHERE r.cliente = pNomeCliente AND r.projeto = pNomeProjetos
+        WITH result{.*, seguencia: toFloat(count(r))} as result
+        RETURN result
     `,
 
     GetIdFiscal: `
