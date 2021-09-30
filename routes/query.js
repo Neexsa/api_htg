@@ -56,12 +56,33 @@ exports.cql = {
                 ativo: true, 
                 pausado: false,
                 idProjeto: pDados.idProjeto,
-                prorrogacao: pDados.prorrogacao
+                prorrogacao: pDados.prorrogacao,
+                atividadesProjeto: pDados.atividadesProjeto
             })
         WITH pDados
         MATCH (c:Cliente), (p:Projeto)
         WHERE c.nome = pDados.nomeCliente AND p.nome = pDados.novoNomeProjeto
         CREATE (c)<-[:PROJETO_DA]-(p)
+    `,
+
+    NovasAtividadesProjeto: `
+        WITH $dados AS pDados, $dadosObj AS pDadosObj
+        MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
+        WHERE c.nome = pDados.nomeCliente AND p.nome = pDados.novoNomeProjeto
+        WITH pDadosObj, p
+
+        CREATE (a:AtividadesProjeto {
+            descricao: pDadosObj.descricao,
+            item: pDadosObj.item,
+            qtdCont: pDadosObj.qtdCont,
+            totalMed: pDadosObj.totalMed,
+            unidade: pDadosObj.unidade,
+            valorUnit: pDadosObj.valorUnit,
+            atividade: pDadosObj.atividade
+        })
+
+        WITH p, a
+        CREATE (p)<-[:ATIVIDADE_DO]-(a)
     `,
 
     EditarProjeto: `
@@ -72,7 +93,15 @@ exports.cql = {
             p.dataInicio = pDados.dataInicio, 
             p.dataFim = pDados.dataFim,
             p.idProjeto = pDados.idProjeto,
-            p.prorrogacao = pDados.prorrogacao
+            p.prorrogacao = pDados.prorrogacao,
+            p.atividadesProjeto = pDados.atividadesProjeto
+    `,
+
+    DeleteAtividadesProjeto: `
+        WITH $dados AS pDados
+        MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)<-[:ATIVIDADE_DO]-(a:AtividadesProjeto)
+        WHERE c.nome = pDados.nomeCliente AND p.nome = pDados.novoNomeProjeto
+        DETACH DELETE a
     `,
 
     Projetos: `
@@ -82,11 +111,17 @@ exports.cql = {
 
         MATCH (c:Cliente)<-[:PROJETO_DA]-(p:Projeto)
         WHERE c.nome CONTAINS pNomeCliente AND p.dataInicio >= pDataInicio AND p.nome CONTAINS pTextoPesquisa
+
+        OPTIONAL MATCH (p)-[:ATIVIDADE_DO]-(a:AtividadesProjeto)
+
+        WITH collect(a{.*}) AS atividadesProjeto, p, c
         RETURN collect(p{.*, 
             idProjeto: toFloat(p.idProjeto), 
             dataInicioInter: toFloat(p.dataInicio), 
             dataFimInter: toFloat(p.dataFim), 
-            cliente: c.nome}) as projetos
+            cliente: c.nome,
+            atividades: atividadesProjeto
+        }) as projetos
     `,
 
     VerificarCliente: `
@@ -226,13 +261,8 @@ exports.cql = {
             $sequencial AS pSequencial,
             $comentariosContratante AS pComentariosContratante
 
-        MATCH (r:RDO {
-            cliente: pNomeCliente,
-            projeto: pNomeProjetos,
-            dataInicio: pDateInicio,
-            id_rdo: pIdRDO,
-            sequencia: pSequencial
-        })
+        MATCH (r:RDO)
+        WHERE r.id_rdo = pIdRDO 
 
         SET r.areaAtuacao = pAreaAtuacao,
         r.cartaChamada = pCartaChamada,
@@ -588,9 +618,13 @@ exports.cql = {
         WITH $nomeCliente AS pNomeCliente, $nomeProjetos AS pNomeProjetos
         MATCH (p:Projeto)-[:PROJETO_DA]->(c:Cliente)
         WHERE c.nome = pNomeCliente AND p.nome = pNomeProjetos
+
+        OPTIONAL MATCH (p)-[:ATIVIDADE_DO]-(a:AtividadesProjeto)
         WITH DISTINCT {dataInicio: p.dataInicio, 
             dataFim: p.dataFim, 
-            prorrogacao: toFloat(p.prorrogacao)
+            prorrogacao: toFloat(p.prorrogacao),
+            atividadesProjeto: p.atividadesProjeto,
+            atividades: collect(a{.*})
         } AS result, pNomeCliente, pNomeProjetos
         OPTIONAL MATCH (r:RDO)
         WHERE r.cliente = pNomeCliente AND r.projeto = pNomeProjetos
@@ -601,6 +635,12 @@ exports.cql = {
     GetIdFiscal: `
         MATCH (c:Colaborador)
         WHERE c.email = $emailFiscal
+        RETURN c.reg
+    `,
+
+    GetIdFiscalAssinatura: `
+        MATCH (c:Colaborador)
+        WHERE c.matricula = $idFiscal
         RETURN c.reg
     `
 }

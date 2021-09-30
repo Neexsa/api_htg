@@ -117,7 +117,8 @@ exports.novoProjeto = async (req, res, next) => {
                 dataInicio: body.dataInicio,
                 dataFim: body.dataFim,
                 prorrogacao: body.prorrogacao,
-                idProjeto: body.idProjeto
+                idProjeto: body.idProjeto,
+                atividadesProjeto: body.atividadesProjeto
             }
         }
         cql = query.cql.VerificarNomeProjeto;
@@ -127,6 +128,20 @@ exports.novoProjeto = async (req, res, next) => {
         } else {
             cql = query.cql.NovoProjeto;
             await db.neo4j.executeCypherAsync(cql, params)
+
+            for (const item of body.atividadesObj) {
+                console.log(item)
+                paramsObj = {
+                    dadosObj: {
+                        ...item
+                    },
+                    dados: params.dados
+                }
+                console.log(paramsObj)
+                cql = query.cql.NovasAtividadesProjeto;
+                await db.neo4j.executeCypherAsync(cql, paramsObj)
+            }
+
             res.status(200).send({mensagem: 'Projeto salvo com sucesso'})
         }
     }catch (e){
@@ -145,11 +160,30 @@ exports.editarProjeto = async (req, res, next) => {
                 dataInicio: body.dataInicio,
                 dataFim: body.dataFim,
                 prorrogacao: body.prorrogacao,
-                idProjeto: body.idProjeto
+                idProjeto: body.idProjeto,
+                atividadesProjeto: body.atividadesProjeto
             }
         }
         cql = query.cql.EditarProjeto;
         await db.neo4j.executeCypherAsync(cql, params)
+
+        cql = query.cql.DeleteAtividadesProjeto;
+        await db.neo4j.executeCypherAsync(cql, params)
+
+        for (const item of body.atividadesObj) {
+            console.log(item)
+            paramsObj = {
+                dadosObj: {
+                    ...item
+                },
+                dados: params.dados
+            }
+            console.log(paramsObj)
+            cql = query.cql.NovasAtividadesProjeto;
+            await db.neo4j.executeCypherAsync(cql, paramsObj)
+        }
+
+
         res.status(200).send({mensagem: 'Projeto salvo com sucesso'})
     }catch (e){
         res.status(500).send({message: 'Não foi possivel fazer cadastro do projeto'})
@@ -905,13 +939,21 @@ exports.assinaturaAws = async (req, res, next) => {
 
     const idFiscal = req.body.idFiscal
 
+    let params = {
+        idFiscal: parseInt(idFiscal) 
+    }
+
+    let cql = query.cql.GetIdFiscalAssinatura;
+    let id = await db.neo4j.executeCypherAsync(cql, params)
+
+
     // console.log(`RdosFinalizados/${id}.pdf`)
 
     const s3 = new aws.S3()
     aws.config.update({accessKeyId: 'AKIA3W7SB22BQZO67YLE', secretAccessKey: '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'})
 
     const myBucket = 'neexsa-htg-pdfs-finalizados'
-    const myKey = `${idFiscal}.pdf`
+    const myKey = `${id}.png`
     // const myKey = 'assinatura.jpg'
     const signedUrlExpireSeconds = 60 * 5 // your expiry time in seconds.
 
@@ -919,7 +961,7 @@ exports.assinaturaAws = async (req, res, next) => {
         Bucket: myBucket,
         Key: myKey,
         Expires: signedUrlExpireSeconds
-       })
+    })
 
     res.send(url)
     
@@ -943,7 +985,7 @@ exports.assinaturaUserAws = async (req, res, next) => {
         aws.config.update({accessKeyId: 'AKIA3W7SB22BQZO67YLE', secretAccessKey: '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'})
     
         const myBucket = 'neexsa-htg-pdfs-finalizados'
-        const myKey = `${idFiscal}.pdf`
+        const myKey = `${idFiscal}.png`
         // const myKey = 'assinatura.jpg'
         const signedUrlExpireSeconds = 60 * 5 // your expiry time in seconds.
     
@@ -1002,6 +1044,49 @@ exports.testePdf = async (req, res, next) => {
             }) 
         }
     })
+
+}
+
+exports.uploadSignature = async (req, res, next) => {
+    try {
+
+        let body = req.body
+        let rawdata = body.image
+        let matches = rawdata.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
+        let type = matches[1]
+
+        let imageNew = Buffer.from(matches[2], 'base64')
+
+        aws.config.update({
+            accessKeyId: 'AKIA3W7SB22BQZO67YLE',
+            secretAccessKey: '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',
+            region: 'sa-east-1'
+        })
+
+        const s3 = new aws.S3();
+    
+        const params = {
+            s3,
+            Bucket: 'neexsa-htg-pdfs-finalizados',
+            acl: 'public-read',
+            Key: `${body.id}.png`,
+            Body: imageNew,
+            ContentType: 'application/png',
+        };
+    
+        var options = {partSize: 10 * 1024 * 1024, queueSize: 1};
+        
+        s3.upload(params, options, (err, res) => {
+            if (err) {
+                console.log(err, 'err');
+            }
+            console.log(res, 'res');
+        });
+
+        res.status(200).send({message: 'Assinatura salva com sucesso'})
+    } catch (err) {
+        res.status(500).send({resposta: err, message: 'Não foi possivel salvar a assinatura'})
+    }
 
 }
     

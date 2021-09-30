@@ -59,4 +59,6 @@ router.post('/new-permissao', controller.newPermissao)
 router.post('/get-info-rdo', controller.getSeguenciaRdo)
 
 router.get('/teste-pdf', controller.testePdf)
+
+router.post('/upload-signature', controller.uploadSignature)
 module.exports = router;
